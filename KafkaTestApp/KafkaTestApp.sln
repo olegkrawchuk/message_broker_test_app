@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31424.327
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBrokerTestApp", "MessageBrokerTestApp\MessageBrokerTestApp.csproj", "{7D0D68AF-5D48-44F6-BBE7-F5D795B004F7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7D0D68AF-5D48-44F6-BBE7-F5D795B004F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D0D68AF-5D48-44F6-BBE7-F5D795B004F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D0D68AF-5D48-44F6-BBE7-F5D795B004F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D0D68AF-5D48-44F6-BBE7-F5D795B004F7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E200AC7A-0D75-4E39-95B0-C0D54CAB2411}
+	EndGlobalSection
+EndGlobal

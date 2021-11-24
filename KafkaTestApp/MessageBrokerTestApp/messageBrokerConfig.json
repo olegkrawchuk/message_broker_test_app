@@ -1,0 +1,31 @@
+{
+  "MessageBroker": "Kafka",
+
+  "Kafka": {
+    "Urls": [ "172.20.21.84:9092", "172.20.21.222:9092", "172.20.21.232:9092" ],
+    "TopicName": "QRCodes",
+
+    "SecurityProtocol": "SaslSsl",
+
+    "Ssl": {
+      "KeyLocation": "./KafkaCerts/localhost.pem",
+      "KeyPassword": "qwerty",
+      "CertificateLocation": "./KafkaCerts/localhost.pem",
+      "CaLocation": "./KafkaCerts/ca-cert"
+    },
+
+    "Sasl": {
+      "SaslMechanism": "ScramSha256",
+      "Username": "user",
+      "Password": "password"
+    }
+  },
+
+  "RabbitMQ": {
+    "Url": "172.20.21.76",
+    "VirtualHost": "/",
+    "Login": "bone",
+    "Password": "bone"
+  }
+
+}
