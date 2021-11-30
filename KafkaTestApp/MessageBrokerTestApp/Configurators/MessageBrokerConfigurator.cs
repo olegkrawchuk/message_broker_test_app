@@ -1,85 +1,89 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using Confluent.Kafka;
-using GreenPipes;
-using MassTransit;
-using MassTransit.KafkaIntegration;
 using MessageBrokerTestApp.Consumers;
 using MessageBrokerTestApp.Implementation;
 using MessageBrokerTestApp.Interfaces;
 using MessageBrokerTestApp.Models.ConfigurationModels;
-using MessageBrokerTestApp.Models.Enums;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace MessageBrokerTestApp.Configurators
 {
     public static class MessageBrokerConfigurator
     {
 
-        public static IMessageBroker Configure<TMessage>(MessageBrokerConfiguration configuration) where TMessage : class
+        public static IMessageBroker Configure<TMessage>(MessageBrokerConfiguration configuration, CancellationToken consumerCancellationToken) where TMessage : class
         {
-            switch (configuration.MessageBroker)
-            {
-                case MessageBroker.RabbitMQ:
-                    return ConfigureRabbitMq<TMessage>(configuration.RabbitMQ);
-                case MessageBroker.Kafka:
-                    return ConfigureKafka<TMessage>(configuration.Kafka);
-            }
-
-            throw new InvalidOperationException("Не выбран брокер сообщений");
+            return ConfigureKafka<TMessage>(configuration.Kafka, consumerCancellationToken);
         }
 
-        private static IMessageBroker ConfigureKafka<TMessage>(KafkaConfiguration configuration) where TMessage : class
+        private static IMessageBroker ConfigureKafka<TMessage>(KafkaConfiguration configuration, CancellationToken consumerCancellationToken) where TMessage : class
         {
-            var services = new ServiceCollection();
-
-            services.AddMassTransit(cfg =>
+            var clientConfig = new ClientConfig
             {
-                cfg.UsingInMemory((context, c) => c.ConfigureEndpoints(context));
+                BootstrapServers = configuration.Url,
+                ClientId = Dns.GetHostName(),
+                SecurityProtocol = configuration.SecurityProtocol
+            };
 
-                cfg.AddRider(rider =>
-                {
-                    rider.AddConsumer<ExternalLoginRequestConsumer<TMessage>>();
-                    rider.AddProducer<TMessage>(configuration.TopicName);
-
-                    rider.UsingKafka((context, configurator) =>
-                    {
-                        configurator.SecurityProtocol = configuration.SecurityProtocol;
-                        configurator.Host(configuration.Urls, c => c.ConfigureHost(configuration));
+            clientConfig.ConfigureAuth(configuration);
 
 
-                        configurator.TopicEndpoint<TMessage>(configuration.TopicName, groupId: Guid.NewGuid().ToString(), e =>
-                        {
-                            e.ConfigureConsumer<ExternalLoginRequestConsumer<TMessage>>(context, c => c.UseRetry(a => a.Immediate(100)));
-                        });
-                    });
-                });
+            var consumerConfig = new ConsumerConfig(clientConfig) { GroupId = Guid.NewGuid().ToString() };
+
+            Task.Factory.StartNew(
+                    async token => await new KafkaConsumer()
+                        .Consume<TMessage>(consumerConfig, configuration.TopicName, consumerCancellationToken)
+                        .ContinueWith(t => Console.WriteLine("Консьюмер остановлен!"), consumerCancellationToken),
+                    consumerCancellationToken,
+                    TaskCreationOptions.LongRunning)
+                .ConfigureAwait(false);
+
+
+            return new KafkaBroker(clientConfig, new Dictionary<string, Type>
+            {
+                { configuration.TopicName, typeof(TMessage) }
             });
-
-            services.AddLogging(c => c.AddConsole().SetMinimumLevel(LogLevel.Trace));
-            var serviceProvider = services.BuildServiceProvider();
-
-            return new KafkaBroker(serviceProvider);
         }
 
-        private static IMessageBroker ConfigureRabbitMq<TMessage>(RabbitMqConfiguration configuration) where TMessage : class
-        {
-            var bus = Bus.Factory.CreateUsingRabbitMq(cfg =>
-            {
-                cfg.Host(configuration.Url, configuration.VirtualHost, h =>
-                {
-                    h.Username(configuration.Login);
-                    h.Password(configuration.Password);
-                });
+        //private static IMessageBroker ConfigureRabbitMq<TMessage>(RabbitMqConfiguration configuration) where TMessage : class
+        //{
+        //    throw new NotSupportedException(
+        //        "Тестирование RabbitMQ временно не доступно. Обратитесь к разработчикам приложения");
 
-                cfg.ReceiveEndpoint(new TemporaryEndpointDefinition(), ep =>
-                {
-                    ep.Consumer<ExternalLoginRequestConsumer<TMessage>>();
-                });
-            });
+        //    var factory = new ConnectionFactory
+        //    {
+        //        UserName = configuration.Login,
+        //        Password = configuration.Password,
+        //        VirtualHost = configuration.VirtualHost,
+        //        HostName = configuration.Url,
+        //        DispatchConsumersAsync = true,
+        //        AutomaticRecoveryEnabled = true,
+        //        NetworkRecoveryInterval = TimeSpan.FromSeconds(5)
+        //    };
 
-            return new RabbitMqBroker(bus);
-        }
+        //    using var connection = factory.CreateConnection();
+        //    using var channel = connection.CreateModel();
+
+        //    var consumer = new AsyncEventingBasicConsumer(channel);
+
+        //    consumer.Received += async (ch, ea) =>
+        //    {
+        //        var message = JsonConvert.DeserializeObject<object>(Encoding.UTF8.GetString(ea.Body.ToArray()));
+
+        //        channel.BasicAck(ea.DeliveryTag, false);
+        //        await Task.Yield();
+        //    };
+
+        //    var consumerTag = channel.BasicConsume("", false, consumer);
+
+        //    channel.Close();
+        //    connection.Close();
+
+        //    return new RabbitMqBroker(null);
+        //}
 
     }
 }

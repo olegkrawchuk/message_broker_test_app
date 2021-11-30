@@ -1,9 +1,7 @@
 {
-  "MessageBroker": "Kafka",
-
   "Kafka": {
-    "Urls": [ "172.20.21.84:9092", "172.20.21.222:9092", "172.20.21.232:9092" ],
-    "TopicName": "QRCodes",
+    "Url": "172.20.21.84:8096",
+    "TopicName": "qrCodeAuth",
 
     "SecurityProtocol": "SaslSsl",
 
@@ -15,17 +13,9 @@
     },
 
     "Sasl": {
-      "SaslMechanism": "ScramSha256",
+      "SaslMechanism": "ScramSha512",
       "Username": "user",
       "Password": "password"
     }
-  },
-
-  "RabbitMQ": {
-    "Url": "172.20.21.76",
-    "VirtualHost": "/",
-    "Login": "bone",
-    "Password": "bone"
   }
-
 }

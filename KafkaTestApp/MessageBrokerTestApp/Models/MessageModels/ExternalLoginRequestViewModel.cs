@@ -6,7 +6,7 @@ namespace MessageBrokerTestApp.Models.MessageModels
 {
     public class ExternalLoginRequestViewModel
     {
-        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Id { get; set; }
 
         [JsonConverter(typeof(StringEnumConverter))]
         public AuthenticationState Status { get; set; } = AuthenticationState.Authenticated;

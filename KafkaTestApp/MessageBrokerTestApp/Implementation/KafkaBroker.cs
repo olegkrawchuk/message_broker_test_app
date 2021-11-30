@@ -1,39 +1,50 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MassTransit.KafkaIntegration;
-using MassTransit;
 using MessageBrokerTestApp.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
+using Confluent.Kafka;
+using MessageBrokerTestApp.Helpers;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MessageBrokerTestApp.Implementation
 {
     public class KafkaBroker : IMessageBroker
     {
-        private readonly IServiceProvider _provider;
+        // private readonly IServiceProvider _provider;
+        private readonly ClientConfig _clientConfig;
+        private readonly Dictionary<string, Type> _topics;
 
-        public KafkaBroker(IServiceProvider provider)
+        public KafkaBroker(ClientConfig clientConfig, Dictionary<string, Type> topics)
         {
-            _provider = provider;
+            _clientConfig = clientConfig;
+            _topics = topics;
         }
 
         public Task StartAsync(CancellationToken cancellationToken = default)
         {
-            var bus = _provider.GetRequiredService<IBusControl>();
-            return bus.StartAsync(cancellationToken);
+            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken = default)
         {
-            var bus = _provider.GetRequiredService<IBusControl>();
-            return bus.StopAsync(cancellationToken);
+            return Task.CompletedTask;
         }
 
-        public Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken = default) where TMessage : class
+        public async Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken = default) where TMessage : class
         {
-            var producer = _provider.GetRequiredService<ITopicProducer<TMessage>>();
-            return producer.Produce(message, cancellationToken);
+            var messageType = typeof(TMessage);
+            var topic = _topics.FirstOrDefault(t => t.Value == messageType).Key;
+            if (topic == null)
+                throw new ArgumentException($"Topic for {messageType} not found");
+
+
+            using var producer = new ProducerBuilder<Null, TMessage>(_clientConfig)
+                .SetValueSerializer(new KafkaJsonSerializer<TMessage>())
+                .Build();
+
+            await producer.ProduceAsync(topic, new Message<Null, TMessage> { Value = message }, cancellationToken);
+            producer.Flush(cancellationToken);
         }
     }
 }
