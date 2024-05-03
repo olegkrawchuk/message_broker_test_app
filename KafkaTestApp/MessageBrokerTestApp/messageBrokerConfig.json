@@ -1,13 +1,13 @@
 {
   "Kafka": {
-    "Url": "172.20.21.84:8096",
+    "Url": "172.20.21.84:9092,172.20.21.222:9092,172.20.21.232:9092",
     "TopicName": "qrCodeAuth",
 
     "SecurityProtocol": "SaslSsl",
 
     "Ssl": {
       "KeyLocation": "./KafkaCerts/localhost.pem",
-      "KeyPassword": "qwerty",
+      "KeyPassword": "123654",
       "CertificateLocation": "./KafkaCerts/localhost.pem",
       "CaLocation": "./KafkaCerts/ca-cert"
     },
